@@ -1,6 +1,4 @@
-
 import math
-from GameAI import BlockType, Point
 
 class Node:
     #========================Attribute=========================
@@ -20,15 +18,10 @@ class Node:
         self.y=pos.y
         self.nodeType=nodeType
 
-    #Print the information of a node
-    #Output: To screen (x,y,a,g,h,f)
-    def printInfo(self):
-        print(self.x,self.y,self.a,self.g,self.h,self.f)
-
     #Cast the node to string
     #Output: string("x y a g h f")
-    def toStr(self):
-        return ("%f %f %f %f %f %f"%(self.x,self.y,self.a,self.g,self.h,self.f))
+    def __str__(self):
+        return (f"{self.x}, {self.y}, {self.a}, {self.g}, {self.h}, {self.f}")
 
     #Get the euclid distance (diagonal distance) between the current to another node
     #Input: node = Node
@@ -63,4 +56,4 @@ class Node:
     #Get the current position
     #Output: Tuple(x,y)
     def pos(self):
-        return (self.x,self.y)
+        return (self.x, self.y)

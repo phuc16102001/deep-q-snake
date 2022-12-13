@@ -2,11 +2,11 @@ import torch
 import numpy as np
 import random
 from collections import deque
-from GameAI import GameAI, Direction, Point, BlockType
-from model import QTrainer, Linear_QNet
-import plotter 
-from reader import *
-from config import *
+
+from environment.GameAI import Direction, Point, BlockType
+from utils.model import QTrainer, Linear_QNet
+from utils.reader import *
+from conf.config import *
 
 def distance(pointA,pointB):
     dx = pointA.x-pointB.x
@@ -21,88 +21,75 @@ class Agent:
     model = None
     lr = None
     trainer = None
+    nDirection = None
+    rayDistance = None
     
-    def __init__(self):
+    def __init__(self, nDirection=4, rayDistance=False):
+        assert(nDirection==4 or nDirection==8)
         self.model = Linear_QNet(15,512,3)
         self.lr = LR
         self.nGame = 0
         self.gamma = GAMMA
         self.trainer = QTrainer(self.model,self.lr,self.gamma)
+        self.nDirection = nDirection
+        self.rayDistance = rayDistance
 
     def getState(self,game):
         head = game.snake[0]
         
+
+        if (self.nDirection==8):
+            dx = [1,1,0,-1,-1,-1, 0, 1]
+            dy = [0,1,1, 1, 0,-1,-1,-1]
+        else: 
+            dx = [1,0,-1, 0]
+            dy = [0,1, 0,-1]
+
+        point = []
         wallPoint = []
         applePoint = []
         snakePoint = []
-
-        # dx = [1,1,0,-1,-1,-1, 0, 1]
-        # dy = [0,1,1, 1, 0,-1,-1,-1]
-        dx = [1,0,-1, 0]
-        dy = [0,1, 0,-1]
-
-        point = []
         for i in range(len(dx)):
             point.append(Point(head.x+dx[i],head.y+dy[i]))
-            # point = Point(head.x,head.y)
-            # infty = 2*np.sqrt(game.height**2+game.width**2)
-            # applePoint.append(infty)
-            # snakePoint.append(infty)
-            # wallPoint.append(infty)
-            # while (game.inside(point)):
-            #     point = Point(point.x+dx[i], point.y+dy[i])
-            #     collideBlock = game.collision(point)
-            #     # print(point, collideBlock)
+            
+            # Calculate ray distance
+            cur = Point(head.x,head.y)
+            infty = 2*np.sqrt(game.height**2+game.width**2)
+            applePoint.append(infty)
+            snakePoint.append(infty)
+            wallPoint.append(infty)
+            while (game.inside(cur)):
+                cur = Point(cur.x+dx[i], cur.y+dy[i])
+                collideBlock = game.collision(cur)
 
-            #     if (collideBlock==BlockType.APPLE):
-            #         applePoint[i]=min(applePoint[i],distance(head,point))
-            #     if (collideBlock==BlockType.SNAKE):
-            #         snakePoint[i]=min(snakePoint[i],distance(head,point))
-            #     if (collideBlock==BlockType.WALL):
-            #         wallPoint[i]=min(wallPoint[i],distance(head,point))
+                distanceFromHead = distance(head, cur)
+                if (collideBlock==BlockType.APPLE):
+                    applePoint[i]=min(applePoint[i], distanceFromHead)
+                if (collideBlock==BlockType.SNAKE):
+                    snakePoint[i]=min(snakePoint[i], distanceFromHead)
+                if (collideBlock==BlockType.WALL):
+                    wallPoint[i]=min(wallPoint[i], distanceFromHead)
 
-        # assert(len(applePoint)==8)
-        # print(applePoint)
-        # print("{}\n{}\n{}\n".format(applePoint,snakePoint,wallPoint))
+
+        prevTwice = -2
+        if (len(game.snake)==1):
+            prevTwice = -1
+
+        
+        ray_state = [
+            wallPoint[i] for i in range(len(dx))
+        ] + [
+            applePoint[i] for i in range(len(dx))
+        ] + [
+            snakePoint[i] for i in range(len(dx))
+        ]
 
         dir_l = (game.direction == Direction.LEFT)
         dir_r = (game.direction == Direction.RIGHT)
         dir_u = (game.direction == Direction.UP)
         dir_d = (game.direction == Direction.DOWN)
 
-        prevTwice = -2
-        if (len(game.snake)==1):
-            prevTwice = -1
-
-        state = [
-            # Distance
-            # wallPoint[0],
-            # wallPoint[1],
-            # wallPoint[2],
-            # wallPoint[3],
-            # wallPoint[4],
-            # wallPoint[5],
-            # wallPoint[6],
-            # wallPoint[7],
-            
-            # applePoint[0],
-            # applePoint[1],
-            # applePoint[2],
-            # applePoint[3],
-            # applePoint[4],
-            # applePoint[5],
-            # applePoint[6],
-            # applePoint[7],
-            
-            # snakePoint[0],
-            # snakePoint[1],
-            # snakePoint[2],
-            # snakePoint[3],
-            # snakePoint[4],
-            # snakePoint[5],
-            # snakePoint[6],
-            # snakePoint[7],
-
+        basic_state = [
             # Danger straight
             (dir_r and (game.collision(point[0])==BlockType.WALL or game.collision(point[0])==BlockType.SNAKE)) or 
             (dir_d and (game.collision(point[1])==BlockType.WALL or game.collision(point[1])==BlockType.SNAKE)) or 
@@ -137,8 +124,13 @@ class Agent:
             game.food.x < game.snakeHead.x,  # food left
             game.food.x > game.snakeHead.x,  # food right
             game.food.y < game.snakeHead.y,  # food up
-            game.food.y > game.snakeHead.y  # food down
+            game.food.y > game.snakeHead.y   # food down
         ]
+
+        if (self.rayDistance):
+            state = ray_state + basic_state
+        else: 
+            state = basic_state
 
         return np.array(state, dtype=float)
 
@@ -172,45 +164,3 @@ class Agent:
         assert(move!=-1)
         final_move[move] = 1
         return final_move
-
-def train(n, k, m, foodList, blockList, x0, y0):
-    scores = []
-    mean_scores = []
-    total_scores = 0
-    record = 0
-    agent = Agent()
-    game = GameAI(n,n,foodList,blockList,x0,y0)
-    print("nGame\tScore\tRecord")
-    while (True):
-        state = agent.getState(game)
-        final_move = agent.getAction(state)
-
-        reward, done, score = game.playStep(final_move)
-        state_new = agent.getState(game)
-
-        agent.train_short_mem(state,final_move,reward,state_new,done)
-        agent.remember(state,final_move,reward,state_new,done)
-        if (done):
-            game.reset()
-            agent.nGame += 1
-            agent.train_long_mem()
-            if (score>record):
-                record = score
-                agent.model.save()
-            print("{}\t{}\t{}".format(agent.nGame,score,record))
-
-            scores.append(score)
-            total_scores += score
-            mean_scores.append(total_scores/agent.nGame)
-            plotter.plot(scores,mean_scores)
-
-if (__name__=='__main__'):
-    # n, k, m, x0, y0, foodList, blockList = readInput('Data/input1.txt')
-    foodList = None
-    blockList = None
-    n = 20
-    k = -1
-    m = -1
-    x0 = 10
-    y0 = 10
-    train(n, k, m, foodList, blockList, x0, y0)

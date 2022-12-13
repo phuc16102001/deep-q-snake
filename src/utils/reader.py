@@ -1,5 +1,3 @@
-from GameAI import GameAI
-
 def extractPoint(line):
     line = line.split()
     assert(len(line)==2)

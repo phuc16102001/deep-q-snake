@@ -1,9 +1,10 @@
 import pygame
-import random
 from collections import namedtuple
 from enum import Enum
-from config import *
-from color import *
+from conf.config import *
+from conf.color import *
+from utils.reader import *
+from argparse import ArgumentParser
 
 pygame.init()
 font = pygame.font.Font(None,25)
@@ -86,15 +87,12 @@ class Game:
         c3 = (self.snakeHead.y > self.height)
         c4 = (self.snakeHead.y < 1)
         if (c1 or c2 or c3 or c4):
-            print("Boundary")
             return True
         
         if (self.snakeHead in self.snake[1:]):
-            print("Self-hit")
             return True
 
         if (self.snakeHead in self.blockList):
-            print("Block-hit")
             return True
 
         return False
@@ -157,7 +155,6 @@ class Game:
 
     def run(self):
         while (self.running):
-            print(self.snakeHead.x, self.snakeHead.y)
             self.handleEvent()
             if (self.direction!=Direction.IDLE):
                 game_end, score = self.updateObject()
@@ -166,3 +163,15 @@ class Game:
                     self.gameOver()
             self.drawUI()
             self.clock.tick(SPEED)
+
+def main(args):
+    testNum = args.test_num
+    n, k, m, x0, y0, foodList, blockList = readInput(f'data/input{testNum}.txt')
+    game = Game(n, n, foodList, blockList, x0, y0)
+    game.run()    
+
+if __name__=="__main__":
+    parser = ArgumentParser()
+    parser.add_argument('test_num', help="Test case number (1 to 10)")
+    args = parser.parse_args()
+    main(args)

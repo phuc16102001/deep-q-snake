@@ -1,5 +1,5 @@
-from MyNode import *
-from GameAI import GameAI, Point, BlockType
+from classes.MyNode import *
+from environment.GameAI import Point, BlockType
 
 #=============================Heuristic function=============================
 #Manhattan
@@ -135,5 +135,6 @@ class Agent:
     def getAction(self,game):
         path, cost, touch = run(game, heuristic)
         if (path!=None):
-            return path[-2]
+            point = path[-2].pos()
+            return Point(point[0], point[1])
         return None

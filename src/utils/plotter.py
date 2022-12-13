@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 from IPython import display
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 plt.ion()
 

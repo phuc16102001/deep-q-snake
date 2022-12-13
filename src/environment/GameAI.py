@@ -2,9 +2,10 @@ import pygame
 import random
 from collections import namedtuple
 from enum import Enum
-from config import *
-from color import *
 import numpy as np
+
+from conf.config import *
+from conf.color import *
 
 pygame.init()
 font = pygame.font.Font(None,25)

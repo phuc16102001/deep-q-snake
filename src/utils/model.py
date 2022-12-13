@@ -1,3 +1,6 @@
+import sys
+sys.path.insert(0,'.')
+
 from re import L
 import torch 
 import torch.nn as nn
@@ -7,8 +10,7 @@ import os
 
 class Linear_QNet(nn.Module):
 
-    def __init__(self,input_size,hidden_size1,output_size):
-    # def __init__(self,input_size,hidden_size1,hidden_size2,hidden_size3,output_size):
+    def __init__(self, input_size, hidden_size1, output_size):
         super().__init__()
         self.linear1 = nn.Linear(input_size,hidden_size1)
         self.linear2 = nn.Linear(hidden_size1,output_size)
@@ -18,12 +20,12 @@ class Linear_QNet(nn.Module):
         x = self.linear2(x)
         return x
         
-    def save(self, fileName='model.pth'):
-        modelFolder = 'model'
+    def save(self, path='model/model.pth'):
+        lastSplashIndex = path.rindex('/')
+        modelFolder = path[:lastSplashIndex]
         if (not os.path.exists(modelFolder)):
             os.makedirs(modelFolder)
-        fileName = os.path.join(modelFolder,fileName)
-        torch.save(self.state_dict(), fileName)
+        torch.save(self.state_dict(), path)
 
 class QTrainer:
     lr = None
