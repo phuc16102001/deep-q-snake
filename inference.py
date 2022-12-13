@@ -129,9 +129,9 @@ if __name__=="__main__":
     scoreBOTH = 0
     while (scoreBOTH<=131):
         for testNumber in range(4,5):
-            n, k, m, x0, y0, foodList, blockList = readInput('Data/input{}.txt'.format(testNumber))
+            n, k, m, x0, y0, foodList, blockList = readInput('data/input{}.txt'.format(testNumber))
             # scoreAS = inferenceAStar(n,foodList,blockList,x0,y0,'Result/output_AS_{}.txt'.format(testNumber))
             # scoreRL = inferenceRL(n,foodList,blockList,x0,y0,'Result/output_RL_{}.txt'.format(testNumber))
-            scoreBOTH = inferenceBoth(n,foodList,blockList,x0,y0,'Result/output_BOTH_{}.txt'.format(testNumber))
+            scoreBOTH = inferenceBoth(n,foodList,blockList,x0,y0,'output/output_BOTH_{}.txt'.format(testNumber))
             # scoreRAND = inferenceRand(n,foodList,blockList,x0,y0,'Result/output_RAND_{}.txt'.format(testNumber))
             print("{}\t{}\t{}\t{}\t{}".format(testNumber,0,0,scoreBOTH,0))
