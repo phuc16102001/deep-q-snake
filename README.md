@@ -22,8 +22,6 @@ This project is to train an snake which is controlled by Deep-Q Learning. It als
     Training process
 </p>
 
-
-
 ## Usage
 
 Firstly, to use the source, please change directory into `/src`:
@@ -46,8 +44,10 @@ python utils/gen_conf.py --size 8 \
 
 ```bash
 python utils/train.py --input_path "../data/input2.txt" \
-    --output_path "../models/current_model.pth"
+    --output_path "../models/current_model.pth" \
 ```
+
+If you want to train from the checkpoint, add flag `--resume`. The model will load the lastest first, otherwise the `model_best.bin` will be loaded.
 
 ### Run inference
 ```bash
@@ -55,7 +55,7 @@ python utils/inference.py --from_test 1 \
     --to_test 3 \
     --data_folder "../data" \
     --output_folder "../output" \
-    --model_path "../models/best.pth"
+    --model_path "../models"
 ```
 
 ## License
