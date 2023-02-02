@@ -1,10 +1,15 @@
 import torch
 import numpy as np
 import random
+import os
 from collections import deque
+import copy
+import warnings
+warnings.filterwarnings('ignore')
 
 from environment.GameAI import Direction, Point, BlockType
-from utils.model import QTrainer, Linear_QNet
+from utils.model import Linear_QNet
+from utils.trainer import QTrainer
 from utils.reader import *
 from conf.config import *
 
@@ -26,7 +31,12 @@ class Agent:
     
     def __init__(self, nDirection=4, rayDistance=False):
         assert(nDirection==4 or nDirection==8)
-        self.model = Linear_QNet(15,512,3)
+
+        nInput = 15
+        if (rayDistance):
+            nInput = 15 + nDirection*3
+        self.model = Linear_QNet(nInput,512,3)
+
         self.lr = LR
         self.nGame = 0
         self.gamma = GAMMA
@@ -34,9 +44,44 @@ class Agent:
         self.nDirection = nDirection
         self.rayDistance = rayDistance
 
+    def save(self, epoch, score, total_scores, title=None, path='model'):
+        if (not os.path.exists(path)): os.makedirs(path)
+        ckpt = {
+            'epoch': epoch,
+            'score': score,
+            'total_scores': total_scores,
+            'model': self.model.state_dict(),
+        }
+        if (title): name = f"{path}/{title}"
+        else: name = f"{path}/model_{epoch}.bin"
+        torch.save(ckpt, name)
+
+    def load(self, path='model', verbose=True):
+        files = os.listdir(path)
+        files = [f[6:-4] for f in files]
+        last_epoch = -1
+        for f in files:
+            try:
+                epoch = int(f)
+                if (epoch > last_epoch): last_epoch = epoch
+            except: pass
+        if (last_epoch==-1): name = f'{path}/model_best.bin'
+        else: name = f'{path}/model_{last_epoch}.bin'
+        ckpt = torch.load(name)
+
+        if (verbose):
+            print("="*10,"Load model","="*10)
+            print(f"File name: {name}")
+            print(f"Epoch: {ckpt['epoch']}")
+            print(f"Score: {ckpt['score']}")
+            print(f"Total score: {ckpt['total_scores']}")
+            print("="*32)
+        self.model.load_state_dict(ckpt['model'])
+    
+        return (ckpt['epoch'], ckpt['score'], ckpt['total_scores'])
+
     def getState(self,game):
         head = game.snake[0]
-        
 
         if (self.nDirection==8):
             dx = [1,1,0,-1,-1,-1, 0, 1]
@@ -70,11 +115,9 @@ class Agent:
                 if (collideBlock==BlockType.WALL):
                     wallPoint[i]=min(wallPoint[i], distanceFromHead)
 
-
         prevTwice = -2
         if (len(game.snake)==1):
             prevTwice = -1
-
         
         ray_state = [
             wallPoint[i] for i in range(len(dx))
@@ -127,10 +170,8 @@ class Agent:
             game.food.y > game.snakeHead.y   # food down
         ]
 
-        if (self.rayDistance):
-            state = ray_state + basic_state
-        else: 
-            state = basic_state
+        if (self.rayDistance): state = ray_state + basic_state
+        else:  state = basic_state
 
         return np.array(state, dtype=float)
 

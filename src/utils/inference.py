@@ -35,11 +35,7 @@ def inference(
     if (strategy != 'as'):
         assert(modelPath is not None)
         agentRL = RL_Agent.Agent()
-        agentRL.model.load_state_dict(
-            copy.deepcopy(
-                torch.load(modelPath)
-            )
-        )
+        agentRL.load(modelPath, verbose=False)
 
     if (outputPath is not None):
         writePosToFile(file, game.snakeHead.x, game.snakeHead.y)
