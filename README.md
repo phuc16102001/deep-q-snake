@@ -79,6 +79,7 @@ python utils/train.py --output_path "../models" \
 If you want to train from the checkpoint, add flag `--resume`. The model will load the lastest first, otherwise the `model_best.bin` will be loaded.
 
 ### Run inference
+
 ```bash
 python utils/inference.py --from_test 1 \
     --to_test 3 \
