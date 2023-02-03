@@ -44,7 +44,7 @@ python utils/gen_conf.py --size 8 \
 
 ```bash
 python utils/train.py --input_path "../data/input2.txt" \
-    --output_path "../models" \
+    --output_path "../models" 
 ```
 
 If you want to train from the checkpoint, add flag `--resume`. The model will load the lastest first, otherwise the `model_best.bin` will be loaded.
