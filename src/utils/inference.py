@@ -21,21 +21,19 @@ def inference(
     x0, 
     y0, 
     strategy = 'both', 
-    modelPath = None, 
+    agentRL = None,
     outputPath = None
 ):
-    assert(strategy in ['rl', 'as', 'both', 'rand'])
-
+    assert(strategy in ['rl', 'as', 'both'])
+    
     if (outputPath is not None):
         file = open(outputPath,'w')
     
     game = GameAI(n,n,foodList,blockList,x0,y0)
     agentAS = AS_Agent.Agent()
     
-    if (strategy != 'as'):
-        assert(modelPath is not None)
-        agentRL = RL_Agent.Agent()
-        agentRL.load(modelPath, verbose=False)
+    if (strategy == 'as'):
+        assert(agentRL is not None)
 
     if (outputPath is not None):
         writePosToFile(file, game.snakeHead.x, game.snakeHead.y)
@@ -65,16 +63,6 @@ def inference(
             else:
                 movePos = actionAS
                 moveType = TypeMove.ASTAR
-    
-        elif (strategy=='rand'):
-            if (random.randint(0,2)==0):
-                actionAS = agentAS.getAction(game)
-                movePos = actionAS
-                moveType = TypeMove.ASTAR
-            else:
-                state = agentRL.getState(game)
-                movePos = agentRL.getAction(state)
-                moveType = TypeMove.RL
 
         if (movePos is None): 
             done = True
@@ -92,9 +80,13 @@ def main(args):
     output_folder = args.output_folder
     model_path = args.model_path
 
-    lsStrategy = ['as','rl','both','rand']
-    lsScore = [0, 0, 0, 0]
-    print("TEST\tAS\tRL\tBOTH\tRANDOM")
+    if (model_path):
+        agentRL = RL_Agent.Agent(inference=True)
+        agentRL.load(model_path, verbose=True)
+
+    lsStrategy = ['as','rl','both']
+    lsScore = [0, 0, 0]
+    print("TEST\tAS\tRL\tBOTH")
     for testNumber in range(from_test, to_test+1):
         n, k, m, x0, y0, foodList, blockList = readInput(f'{data_folder}/input{testNumber}.txt')
         for i in range(len(lsStrategy)):
@@ -105,10 +97,10 @@ def main(args):
                 x0, 
                 y0, 
                 strategy=lsStrategy[i],
+                agentRL=agentRL,
                 outputPath=f'{output_folder}/output_{lsStrategy[i]}_{testNumber}.txt',
-                modelPath=model_path
             )
-        print(f"{testNumber}\t{lsScore[0]}\t{lsScore[1]}\t{lsScore[2]}\t{lsScore[3]}")
+        print(f"{testNumber}\t{lsScore[0]}\t{lsScore[1]}\t{lsScore[2]}")
 
 if __name__=="__main__":
     parser = ArgumentParser()

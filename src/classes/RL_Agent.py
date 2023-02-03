@@ -28,21 +28,21 @@ class Agent:
     trainer = None
     nDirection = None
     rayDistance = None
-    
-    def __init__(self, nDirection=4, rayDistance=False):
+    lr = LR
+    nGame = 0
+    gamma = GAMMA
+
+    def __init__(self, nDirection=4, rayDistance=False, inference=False):
         assert(nDirection==4 or nDirection==8)
 
         nInput = 15
-        if (rayDistance):
-            nInput = 15 + nDirection*3
-        self.model = Linear_QNet(nInput,512,3)
+        if (rayDistance): nInput += nDirection*3
+        self.model = Linear_QNet(nInput, 512, 3)
 
-        self.lr = LR
-        self.nGame = 0
-        self.gamma = GAMMA
         self.trainer = QTrainer(self.model,self.lr,self.gamma)
         self.nDirection = nDirection
         self.rayDistance = rayDistance
+        self.inference = inference
 
     def save(self, epoch, score, total_scores, title=None, path='model'):
         if (not os.path.exists(path)): os.makedirs(path)
@@ -75,12 +75,14 @@ class Agent:
             print(f"Epoch: {ckpt['epoch']}")
             print(f"Score: {ckpt['score']}")
             print(f"Total score: {ckpt['total_scores']}")
+            print(f"Inference: {self.inference}")
             print("="*32)
         self.model.load_state_dict(ckpt['model'])
+        if (self.inference): self.model.eval()
     
         return (ckpt['epoch'], ckpt['score'], ckpt['total_scores'])
 
-    def getState(self,game):
+    def getState(self, game):
         head = game.snake[0]
 
         if (self.nDirection==8):
@@ -193,11 +195,13 @@ class Agent:
         self.trainer.train_step(state,action,reward,next_state,done)
 
     def getAction(self, state):
-        self.epsilon = 80 - self.nGame
+        self.epsilon = 200 - self.nGame
         final_move = [0,0,0]
         move = -1
-        if (random.randint(0,200)<self.epsilon):
-            move = random.randint(0,2)
+        random_rate = random.randint(0,200) 
+        c1 = (random_rate < self.epsilon) 
+        c2 = self.inference
+        if (c1 and not(c2)): move = random.randint(0,2)
         else:
             tensor_state = torch.tensor(state,dtype=torch.float)
             prediction = self.model(tensor_state)

@@ -137,9 +137,10 @@ class GameAI:
         pygame.display.update()
 
     def gameOver(self):
-        self.running = False
-        pygame.quit()
-        quit()
+        reward = 0
+        game_end = True
+        score = self.score
+        return reward, game_end, score
 
     def handleEvent(self):
         for event in pygame.event.get():
@@ -147,8 +148,7 @@ class GameAI:
                 self.gameOver()
 
     def createFood(self):
-        if (len(self.foodList)<1):
-            self.gameOver()
+        if (len(self.foodList)<1): self.gameOver()
         else:
             nLose = 0
             self.food = self.foodList[0]

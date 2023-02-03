@@ -7,6 +7,7 @@ import classes.RL_Agent as RL_Agent
 from environment.GameAI import GameAI
 import utils.plotter as plotter
 from utils.reader import readInput
+from utils.gen_map import gen_map
 
 def train(
     n, 
@@ -16,6 +17,7 @@ def train(
     blockList, 
     x0, 
     y0,
+    regen,
     output_path='models',
     resume = False
 ):
@@ -41,10 +43,7 @@ def train(
         agent.train_short_mem(state,final_move,reward,state_new,done)
         agent.remember(state,final_move,reward,state_new,done)
         if (done):
-            game.reset()
             agent.nGame += 1
-            agent.train_long_mem()
-
             scores.append(score)
             total_scores += score
             mean_scores.append(total_scores/agent.nGame)
@@ -54,23 +53,55 @@ def train(
                 agent.save(agent.nGame, score, total_scores, 'model_best.bin', output_path)
             print("{}\t{}\t{}".format(agent.nGame,score,best_score))
             agent.save(agent.nGame, score, total_scores, path=output_path)
-
             plotter.plot(scores, mean_scores)
+
+            game.reset()
+            agent.train_long_mem()
+
+            if (regen):
+                n, k, m, x0, y0, foodList, blockList = gen_map(n, k, m)
+                game = GameAI(n,n,foodList,blockList,x0,y0)
 
 def main(args):
     input_path = args.input_path
     output_path = args.output_path
     resume = args.resume
 
-    n, k, m, x0, y0, foodList, blockList = readInput(input_path)
-    train(n, k, m, foodList, blockList, x0, y0, output_path, resume)
+    if (input_path is None):
+        n = args.game_size
+        k = args.num_food
+        m = args.num_block
+        n, k, m, x0, y0, foodList, blockList = gen_map(n, k, m)
+        regen = True
+    else:
+        n, k, m, x0, y0, foodList, blockList = readInput(input_path)
+        regen = False
+    
+    train(n, k, m, foodList, blockList, x0, y0, regen, output_path, resume)
 
 if __name__=="__main__":
     parser = ArgumentParser()
     parser.add_argument(
         '--input_path', 
         help='The path to input map used to train',
-        required=True
+    )
+    parser.add_argument(
+        '-n', 
+        '--game_size',
+        help='The width and height of game',
+        type=int
+    )
+    parser.add_argument(
+        '-k', 
+        '--num_food',
+        help='The number of food sequence',
+        type=int
+    )
+    parser.add_argument(
+        '-m', 
+        '--num_block',
+        help='The number of block in the game',
+        type=int
     )
     parser.add_argument(
         '--output_path', 
